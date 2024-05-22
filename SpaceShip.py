@@ -1,7 +1,6 @@
 import pygame
 import random 
 import os
-import re
 
 FPS = 60 
 WIDTH = 700
