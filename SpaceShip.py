@@ -118,7 +118,7 @@ def draw_init():
     highscore = get_highest_score()
     draw_text(screen, f'HighScore: {highscore}', 22, WIDTH/2, HEIGHT*3/4)
     
-    draw_text(screen, 'Press ANY key to start the game!', 18, WIDTH/2, HEIGHT*3/4 + 30)
+    draw_text(screen, 'Press SPACE key to start the game!', 18, WIDTH/2, HEIGHT*3/4 + 30)
     draw_text(screen, 'Press Esc key to quit game', 18, WIDTH/2, HEIGHT*3/4 + 60)
     pygame.display.update()
     waiting = True
@@ -130,8 +130,9 @@ def draw_init():
                 pygame.quit()
                 return True
             elif event.type == pygame.KEYDOWN:
-                waiting = False
-                return False
+                if event.key == pygame.K_SPACE:
+                    waiting = False
+                    return False
 
 def save_highscore(score):
     try:
