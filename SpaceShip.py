@@ -1,6 +1,7 @@
 import pygame
 import random
 import os
+import pickle
 
 FPS = 60
 WIDTH = 700
@@ -88,7 +89,7 @@ def draw_lives(surf, lives, img, x, y):
 
 def get_highscores():
     try:
-        with open("HighScore.txt", "r") as file:
+        with open("HighScore.dat", "r") as file:
             highscores = [int(line.strip()) for line in file.readlines()]
             return highscores
     except FileNotFoundError:
