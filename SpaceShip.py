@@ -3,24 +3,26 @@ import random
 import os
 import pickle
 
+# 游戏参数
 FPS = 60
 WIDTH = 700
 HEIGHT = 600
 
+# 颜色
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
-# Game Initialization and Create Window
+# 初始化 Pygame
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("SpaceShip")
 clock = pygame.time.Clock()
 
-# Load images
+# 加载图片
 background_img = pygame.image.load(os.path.join("img", "background.png")).convert()
 player_img = pygame.image.load(os.path.join("img", "player.ico")).convert()
 player_mini_img = pygame.transform.scale(player_img, (25, 19))
@@ -48,7 +50,7 @@ power_imgs = {
     'gun': pygame.image.load(os.path.join("img", "gun.png")).convert()
 }
 
-# Load sounds
+# 加载音效
 shoot_sound = pygame.mixer.Sound(os.path.join("sound", "shoot.wav"))
 gun_sound = pygame.mixer.Sound(os.path.join("sound", "pow1.wav"))
 shield_sound = pygame.mixer.Sound(os.path.join("sound", "pow0.wav"))
@@ -60,6 +62,7 @@ expl_sounds = [
 pygame.mixer.music.load(os.path.join("sound", "background.ogg"))
 pygame.mixer.music.set_volume(0.4)
 
+# 字体
 font_name = os.path.join("font.ttf")
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
@@ -87,47 +90,51 @@ def draw_lives(surf, lives, img, x, y):
         img_rect.y = y
         surf.blit(img, img_rect)
 
+# 获取最高分
 def get_highscores():
+    if not os.path.exists("HighScore.dat"):
+        return []
     try:
-        with open("HighScore.dat", "r") as file:
-            highscores = [int(line.strip()) for line in file.readlines()]
+        with open("HighScore.dat", "rb") as file:
+            highscores = pickle.load(file)
+            if not isinstance(highscores, list):
+                return []
             return highscores
-    except FileNotFoundError:
+    except (EOFError, pickle.UnpicklingError):
         return []
     except Exception as e:
         print("Failed to read highscore:", e)
         return []
 
-def update_highscore(score):
+# 更新最高分
+def update_highscore(username, score):
     highscores = get_highscores()
-    highscores.append(score)
-    highscores.sort(reverse=True)
-    with open("HighScore.txt", "w") as file:
-        for score in highscores:
-            file.write(f"{score}\n")
+    highscores.append((username, score))
+    highscores.sort(key=lambda x: x[1], reverse=True)
+    with open("HighScore.dat", "wb") as file:
+        pickle.dump(highscores, file)
 
+# 获取最高分数
 def get_highest_score():
     highscores = get_highscores()
     if highscores:
-        return highscores[0]
+        return highscores[0][1]
     return 0
 
-def draw_init():
+# 绘制主界面
+def draw_init(username):
     screen.blit(background_img, (0, 0))
     draw_text(screen, 'SpaceShip!', 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, '← → to move, Press "Space" to fire bullet', 22, WIDTH / 2, HEIGHT / 2)
-    
-    # 读取最高分数并显示在屏幕上
     highscore = get_highest_score()
     draw_text(screen, f'HighScore: {highscore}', 22, WIDTH / 2, HEIGHT * 3 / 4)
-    
+    draw_text(screen, f'User: {username}', 22, WIDTH / 20, HEIGHT / 20)
     draw_text(screen, 'Press SPACE key to start the game!', 18, WIDTH / 2, HEIGHT * 3 / 4 + 30)
     draw_text(screen, 'Press Esc key to quit game', 18, WIDTH / 2, HEIGHT * 3 / 4 + 60)
     pygame.display.update()
     waiting = True
     while waiting:
         clock.tick(FPS)
-        # Get Input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -138,13 +145,7 @@ def draw_init():
                     return False
     return False
 
-def save_highscore(score):
-    try:
-        with open("HighScore.txt", "a") as f:
-            f.write(f"{score}\n")
-    except Exception as e:
-        print("Failed to save highscore:", e)
-
+# 用户类
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -159,15 +160,11 @@ class Player(pygame.sprite.Sprite):
         self.lives = 3
         self.hidden = False
         self.hide_time = 0
-        self.gun = 1
+        self.gun= 1
         self.gun_time = 0
 
     def update(self):
         now = pygame.time.get_ticks()
-        if self.gun > 1 and now - self.gun_time > 5000:
-            self.gun -= 1
-            self.gun_time = now
-
         if self.hidden and now - self.hide_time > 1000:
             self.hidden = False
             self.rect.centerx = WIDTH / 2
@@ -213,6 +210,7 @@ class Player(pygame.sprite.Sprite):
         self.gun += 1
         self.gun_time = pygame.time.get_ticks()
 
+# 岩石类
 class Rock(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -222,75 +220,34 @@ class Rock(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * 0.85 / 2)
         self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-        self.rect.y = random.randrange(-180, -100)
+        self.rect.y = random.randrange(-100, -40)
         self.speedy = random.randrange(2, 10)
         self.speedx = random.randrange(-3, 3)
+        self.rot_degree = random.randrange(0, 360)
+        self.rot_speed = random.randrange(-8, 8)
+        self.last_update = pygame.time.get_ticks()
         self.total_degree = 0
-        self.rot_degree = random.randrange(-3, 3)
 
     def rotate(self):
-        self.total_degree += self.rot_degree
-        self.total_degree = self.total_degree % 360
-        self.image = pygame.transform.rotate(self.image_orig, self.total_degree)
-        center = self.rect.center
-        self.rect = self.image.get_rect()
-        self.rect.center = center
+        now = pygame.time.get_ticks()
+        if now - self.last_update > 50:
+            self.last_update = now
+            self.total_degree = (self.total_degree + self.rot_speed) % 360
+            self.image = pygame.transform.rotate(self.image_orig, self.total_degree)
+            center = self.rect.center
+            self.rect = self.image.get_rect()
+            self.rect.center = center
 
     def update(self):
         self.rotate()
         self.rect.y += self.speedy
         self.rect.x += self.speedx
-        if self.rect.top > HEIGHT or self.rect.left > WIDTH or self.rect.right < 0:
+        if self.rect.top > HEIGHT or self.rect.right < 0 or self.rect.left > WIDTH:
             self.rect.x = random.randrange(0, WIDTH - self.rect.width)
             self.rect.y = random.randrange(-100, -40)
             self.speedy = random.randrange(2, 10)
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = enemy_img
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.radius = int(self.rect.width * 0.85 / 2)
-        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-        self.rect.y = random.randrange(-100, -40)
-        self.speedx = random.randrange(-3, 3)
-        self.health = 3
-        self.shoot_delay = 1000
-        self.last_shot = pygame.time.get_ticks()
-
-    def update(self):
-        self.rect.x += self.speedx
-        if self.rect.right > WIDTH or self.rect.left < 0:
-            self.speedx = -self.speedx
-
-        now = pygame.time.get_ticks()
-        if now - self.last_shot > self.shoot_delay:
-            self.shoot()
-            self.last_shot = now
-
-    def shoot(self):
-        enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
-        all_sprites.add(enemy_bullet)
-        enemy_bullets.add(enemy_bullet)
-        shoot_sound.play()
-
-class EnemyBullet(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = enemy_bullet_img
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.rect.centerx = x
-        self.rect.top = y
-        self.speedy = 5
-
-    def update(self):
-        self.rect.y += self.speedy
-        if self.rect.top > HEIGHT:
-            self.kill()
-
-
+# 子弹类
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -306,42 +263,7 @@ class Bullet(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = enemy_img
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.radius = int(self.rect.width * 0.85 / 2)
-        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-        self.rect.y = random.randrange(-100, -40)
-        self.speedy = random.randrange(1, 8)
-        self.speedx = random.randrange(-3, 3)
-        self.health = 3
-
-    def update(self):
-        self.rect.y += self.speedy
-        self.rect.x += self.speedx
-        if self.rect.top > HEIGHT or self.rect.left > WIDTH or self.rect.right < 0:
-            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-            self.rect.y = random.randrange(-100, -40)
-            self.speedy = random.randrange(1, 8)
-
-class EnemyBullet(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = enemy_bullet_img
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.rect.centerx = x
-        self.rect.top = y
-        self.speedy = 5
-
-    def update(self):
-        self.rect.y += self.speedy
-        if self.rect.top > HEIGHT:
-            self.kill()
-
+# 爆炸效果类
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, center, size):
         pygame.sprite.Sprite.__init__(self)
@@ -366,6 +288,7 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
 
+# 道具类
 class Power(pygame.sprite.Sprite):
     def __init__(self, center):
         pygame.sprite.Sprite.__init__(self)
@@ -381,128 +304,221 @@ class Power(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT:
             self.kill()
 
-def main():
-    global all_sprites, bullets, mobs, enemy_bullets, powers, enemies
+# 敌人类
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(enemy_img, (50, 38))
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.radius = 20
+        self.rect.centerx = random.randint(50, WIDTH - 50)
+        self.rect.bottom = random.randint(-100, -40)
+        self.speedy = random.randint(3, 8)
+        self.speedx = random.randint(-3, 3)
+        self.shoot_delay = random.randint(500, 3000)
 
-    all_sprites = pygame.sprite.Group()
-    player = Player()
-    all_sprites.add(player)
-    bullets = pygame.sprite.Group()
-    enemy_bullets = pygame.sprite.Group()
-    mobs = pygame.sprite.Group()
-    powers = pygame.sprite.Group()
-    enemies = pygame.sprite.Group()
+    def update(self):
+        self.rect.y += self.speedy
+        self.rect.x += self.speedx
+        if self.rect.top > HEIGHT + 10 or self.rect.left < -25 or self.rect.right > WIDTH + 25:
+            self.rect.centerx = random.randint(50, WIDTH - 50)
+            self.rect.bottom = random.randint(-100, -40)
+            self.speedy = random.randint(3, 8)
+            self.speedx = random.randint(-3, 3)
+        if random.random() < 0.01:
+            self.shoot()
 
-    for i in range(8):
-        m = Rock()
-        all_sprites.add(m)
-        mobs.add(m)
+    def shoot(self):
+        enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
+        all_sprites.add(enemy_bullet)
+        enemy_bullets.add(enemy_bullet)
 
-    for i in range(3):
-        e = Enemy()
-        all_sprites.add(e)
-        enemies.add(e)
+# 敌人子弹类
+class EnemyBullet(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = enemy_bullet_img
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.top = y
+        self.speedy = 5
 
-    score = 0
-    pygame.mixer.music.play(loops=-1)
+    def update(self):
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT:
+            self.kill()
 
-    running = True
-    while running:
-        clock.tick(FPS)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+# 初始化Pygame和游戏窗口
+pygame.init()
+pygame.mixer.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("SpaceShip")
+clock = pygame.time.Clock()
 
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    player.shoot()
+# 加载游戏资源
+background_img = pygame.image.load(os.path.join("img", "background.png")).convert()
+player_img = pygame.image.load(os.path.join("img", "player.ico")).convert()
+player_mini_img = pygame.transform.scale(player_img, (25, 19))
+player_mini_img.set_colorkey(BLACK)
+pygame.display.set_icon(player_mini_img)
+bullet_img = pygame.image.load(os.path.join("img", "bullet.png")).convert()
+enemy_img = pygame.image.load(os.path.join("img", "enemy.ico")).convert()
+enemy_img.set_colorkey(BLACK)
+enemy_bullet_img = pygame.image.load(os.path.join("img", "enemy-bullet.png")).convert()
+enemy_bullet_img.set_colorkey(BLACK)
+rock_imgs = []
+for i in range(7):
+    rock_imgs.append(pygame.image.load(os.path.join("img", f"rock{i}.png")).convert())
+expl_anim = {'lg': [], 'sm': [], 'player': []}
+for i in range(9):
+    expl_img = pygame.image.load(os.path.join("img", f"expl{i}.png")).convert()
+    expl_img.set_colorkey(BLACK)
+    expl_anim['lg'].append(pygame.transform.scale(expl_img, (75, 75)))
+    expl_anim['sm'].append(pygame.transform.scale(expl_img, (30, 30)))
+    player_expl_img = pygame.image.load(os.path.join("img", f"player_expl{i}.png")).convert()
+    player_expl_img.set_colorkey(BLACK)
+    expl_anim['player'].append(player_expl_img)
+power_imgs = {
+    'shield': pygame.image.load(os.path.join("img", "shield.png")).convert(),
+    'gun': pygame.image.load(os.path.join("img", "gun.png")).convert()
+}
 
-        all_sprites.update()
+# 加载音效
+shoot_sound = pygame.mixer.Sound(os.path.join("sound", "shoot.wav"))
+gun_sound = pygame.mixer.Sound(os.path.join("sound", "pow1.wav"))
+shield_sound = pygame.mixer.Sound(os.path.join("sound", "pow0.wav"))
+die_sound = pygame.mixer.Sound(os.path.join("sound", "rumble.ogg"))
+expl_sounds = [
+    pygame.mixer.Sound(os.path.join("sound", "expl0.wav")),
+    pygame.mixer.Sound(os.path.join("sound", "expl1.wav"))
+]
+pygame.mixer.music.load(os.path.join("sound", "background.ogg"))
+pygame.mixer.music.set_volume(0.4)
 
-        # Check to see if a bullet hit a mob
-        hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
-        for hit in hits:
-            score += 50 - hit.radius
-            random.choice(expl_sounds).play()
-            expl = Explosion(hit.rect.center, 'lg')
-            all_sprites.add(expl)
-            if random.random() > 0.9:
-                pow = Power(hit.rect.center)
-                all_sprites.add(pow)
-                powers.add(pow)
-            m = Rock()
-            all_sprites.add(m)
-            mobs.add(m)
+# 字体
+font_name = os.path.join("font.ttf")
 
-        # Check to see if a mob hit the player
-        hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
-        for hit in hits:
-            player.health -= hit.radius * 2
-            expl = Explosion(hit.rect.center, 'sm')
-            all_sprites.add(expl)
-            m = Rock()
-            all_sprites.add(m)
-            mobs.add(m)
-            if player.health <= 0:
-                die_sound.play()
-                death_explosion = Explosion(player.rect.center, 'player')
-                all_sprites.add(death_explosion)
-                player.hide()
-                player.lives -= 1
-                player.health = 100
+# 游戏参数
+FPS = 60
+username = "username"  # 修改为你的用户名
+score = 0
+running = True
+game_over = True
+highscore = get_highest_score()
 
-        # Check to see if player hit a power
-        hits = pygame.sprite.spritecollide(player, powers, True)
-        for hit in hits:
-            if hit.type == 'shield':
-                shield_sound.play()
-                player.health += 20
-                if player.health > 100:
-                    player.health = 100
-            if hit.type == 'gun':
-                gun_sound.play()
-                player.gunup()
-
-        # Check to see if an enemy bullet hit the player
-        hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
-        for hit in hits:
-            player.health -= 10
-            if player.health <= 0:
-                die_sound.play()
-                death_explosion = Explosion(player.rect.center, 'player')
-                all_sprites.add(death_explosion)
-                player.hide()
-                player.lives -= 1
-                player.health = 100
-
-        # if the player died and the explosion has finished playing
-        if player.lives == 0 and not death_explosion.alive():
+while running:
+    if game_over:
+        if draw_init(username):
             running = False
-            update_highscore(score)
-            save_highscore(score)
+            continue
 
-        screen.fill(BLACK)
-        screen.blit(background_img, (0, 0))
-        all_sprites.draw(screen)
-        draw_text(screen, str(score), 18, WIDTH / 2, 10)
-        draw_health(screen, player.health, 5, 15, GREEN)
-        draw_lives(screen, player.lives, player_mini_img, WIDTH - 100, 15)
-        pygame.display.flip()
+        # 初始化游戏参数
+        all_sprites = pygame.sprite.Group()
+        rocks = pygame.sprite.Group()
+        bullets = pygame.sprite.Group()
+        enemy_bullets = pygame.sprite.Group()
+        powerups = pygame.sprite.Group()
+        player = Player()
+        all_sprites.add(player)
+        for i in range(8):
+            new_rock()
+        score = 0
+        game_over = False
+        pygame.mixer.music.play(loops=-1)
 
-    pygame.mixer.music.stop()
+    # 保持游戏运行的帧率
+    clock.tick(FPS)
 
-if __name__ == '__main__':
-    while True:
-        show_go_screen = draw_init()
-        if show_go_screen:
-            break
-        main()
-    pygame.quit()
+    # 处理事件
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                player.shoot()
 
-if __name__ == '__main__':
-    while True:
-        show_go_screen = draw_init()
-        if show_go_screen:
-            break
-        main()
-    pygame.quit()
+    # 更新游戏状态
+    all_sprites.update()
+
+    # 检测子弹和岩石的碰撞
+    hits = pygame.sprite.groupcollide(rocks, bullets, True, True)
+    for hit in hits:
+        score += 50 - hit.radius
+        random.choice(expl_sounds).play()
+        expl = Explosion(hit.rect.center, 'lg')
+        all_sprites.add(expl)
+        if random.random() > 0.9:
+            pow = Power(hit.rect.center)
+            all_sprites.add(pow)
+            powerups.add(pow)
+        new_rock()
+
+    # 检测敌人和玩家子弹的碰撞
+    hits = pygame.sprite.groupcollide(enemy_bullets, bullets, True, True)
+    for hit in hits:
+        score += 50
+        random.choice(expl_sounds).play()
+        expl = Explosion(hit.rect.center, 'lg')
+        all_sprites.add(expl)
+
+    # 检测玩家和岩石的碰撞
+    hits = pygame.sprite.spritecollide(player, rocks, True, pygame.sprite.collide_circle)
+    for hit in hits:
+        player.health -= hit.radius
+        expl = Explosion(hit.rect.center, 'sm')
+        all_sprites.add(expl)
+        new_rock()
+        if player.health <= 0:
+            die_sound.play()
+            death_explosion = Explosion(player.rect.center, 'player')
+            all_sprites.add(death_explosion)
+            player.hide()
+            player.health = 100
+            player.lives -= 1
+
+    # 检测玩家和道具的碰撞
+    hits = pygame.sprite.spritecollide(player, powerups, True)
+    for hit in hits:
+        if hit.type == 'shield':
+            player.health += random.randrange(10, 30)
+            if player.health > 100:
+                player.health = 100
+            shield_sound.play()
+        elif hit.type == 'gun':
+            player.gunup()
+            gun_sound.play()
+
+    # 检测玩家和敌人的碰撞
+    hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
+    for hit in hits:
+        player.health -= 20
+        if player.health <= 0:
+            die_sound.play()
+            death_explosion = Explosion(player.rect.center, 'player')
+            all_sprites.add(death_explosion)
+            player.hide()
+            player.health = 100
+            player.lives -= 1
+
+    # 检测游戏是否结束
+    if player.lives == 0 and not death_explosion.alive():
+        game_over = True
+        update_highscore(username, score)
+        pygame.mixer.music.stop()
+
+    # 绘制游戏界面
+    screen.fill(BLACK)
+    screen.blit(background_img, (0, 0))
+    all_sprites.draw(screen)
+    draw_text(screen, str(score), 18, WIDTH / 2, 10)
+    draw_health(screen, player.health, 5, 5, GREEN)
+    draw_lives(screen, player.lives, player_mini_img, WIDTH - 100, 5)
+    draw_text(screen, f'User: {username}', 22, WIDTH / 20, HEIGHT /20)
+    draw_text(screen, f'HighScore: {highscore}', 22, WIDTH / 2, 10)
+    pygame.display.flip()
+
+pygame.quit()
+
+
