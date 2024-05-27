@@ -4,7 +4,6 @@ import os
 import pickle
 from tkinter import Tk, simpledialog
 
-
 # Game Initialization and Create Window
 FPS = 60
 WIDTH = 700
