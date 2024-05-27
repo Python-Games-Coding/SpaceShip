@@ -146,6 +146,7 @@ def load_username():
             return pickle.load(f)
     except (FileNotFoundError, EOFError):
         return None
+    
 
 # Get or create username
 username = load_username()
@@ -502,5 +503,6 @@ while running:
     draw_health(screen, player.health, 5, 15, GREEN)
     draw_lives(screen, player.lives, player_mini_img, WIDTH - 100, 15)
     pygame.display.update()
+
 
 pygame.quit()
