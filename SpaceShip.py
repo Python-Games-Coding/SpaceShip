@@ -6,7 +6,7 @@ from tkinter import Tk, simpledialog
 
 # Game Initialization and Create Window
 FPS = 60
-WIDTH = 700
+WIDTH = 800
 HEIGHT = 600
 
 BLACK = (0, 0, 0)
@@ -72,12 +72,17 @@ def draw_text(surf, text, size, x, y):
 def draw_health(surf, hp, x, y, color):
     if hp < 0:
         hp = 0
+    if hp > 100:
+        hp = 100
     BAR_LENGTH = 100
     BAR_HEIGHT = 10
     fill = (hp / 100) * BAR_LENGTH
     outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
     fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
-    pygame.draw.rect(surf, color, fill_rect)
+    if hp <= 50:  # 在血量低于等于50时显示为红色
+        pygame.draw.rect(surf, RED, fill_rect)
+    else:
+        pygame.draw.rect(surf, color, fill_rect)
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
 
 def draw_lives(surf, lives, img, x, y):
@@ -133,6 +138,29 @@ def draw_init():
                     return False
     return False
 
+def draw_difficulty():
+    screen.blit(background_img, (0, 0))
+    draw_text(screen, 'Select Difficulty', 64, WIDTH / 2, HEIGHT / 4)
+    draw_text(screen, '1. Easy Mode', 22, WIDTH / 2, HEIGHT / 2)
+    draw_text(screen, '2. Normal Mode', 22, WIDTH / 2, HEIGHT / 2 + 30)
+    draw_text(screen, '3. Hard Mode', 22, WIDTH / 2, HEIGHT / 2 + 60)
+    pygame.display.update()
+    waiting = True
+    while waiting:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return None
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    return 200  # Easy difficulty gives 150 health
+                if event.key == pygame.K_2:
+                    return 100  # Normal difficulty gives 100 health
+                if event.key == pygame.K_3:
+                    return 50   # Hard difficulty gives 50 health
+    return 100  # Default to Normal difficulty
+
 def save_username(username):
     with open(".spaceship/saves/save.dat", "wb") as f:
         pickle.dump(username, f)
@@ -145,7 +173,6 @@ def load_username():
             return pickle.load(f)
     except (FileNotFoundError, EOFError):
         return None
-    
 
 # Get or create username
 username = load_username()
@@ -158,7 +185,7 @@ if not username:
         save_username(username)
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, health):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.transform.scale(player_img, (50, 38))
         self.image.set_colorkey(BLACK)
@@ -167,7 +194,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
         self.speedx = 8
-        self.health = 100
+        self.health = health
         self.lives = 3
         self.hidden = False
         self.hide_time = 0
@@ -199,6 +226,10 @@ class Player(pygame.sprite.Sprite):
             self.rect.right = WIDTH
         if self.rect.left < 0:
             self.rect.left = 0
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
+        if self.rect.top < 0:
+            self.rect.top = 0
 
     def shoot(self):
         if not self.hidden:
@@ -225,16 +256,48 @@ class Player(pygame.sprite.Sprite):
         self.gun += 1
         self.gun_time = pygame.time.get_ticks()
 
-class Rock(pygame.sprite.Sprite):
+class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image_ori = random.choice(rock_imgs)
-        self.image_ori.set_colorkey(BLACK)
-        self.image = self.image_ori.copy()
+        self.image = pygame.transform.scale(enemy_img, (50, 38))  # Adjust size as necessary
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * 0.85 / 2)
         self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-        self.rect.y = random.randrange(-180, -100)
+        self.rect.y = random.randrange(-100, -40)
+        self.speedy = random.randrange(2, 5)
+        self.speedx = random.randrange(-3, 3)
+        self.last_shot = pygame.time.get_ticks()
+        self.shoot_delay = 1500  # delay between shots in milliseconds
+
+    def update(self):
+        self.rect.y += self.speedy
+        self.rect.x += self.speedx
+        if self.rect.top > HEIGHT or self.rect.right < 0 or self.rect.left > WIDTH:
+            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+            self.rect.y = random.randrange(-100, -40)
+            self.speedy = random.randrange(2, 5)
+            self.speedx = random.randrange(-3, 3)
+        now = pygame.time.get_ticks()
+        if now - self.last_shot > self.shoot_delay:
+            self.last_shot = now
+            self.shoot()
+
+    def shoot(self):
+        enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
+        all_sprites.add(enemy_bullet)
+        enemy_bullets.add(enemy_bullet)
+
+class Rock(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image_orig = random.choice(rock_imgs)
+        self.image_orig.set_colorkey(BLACK)
+        self.image = self.image_orig.copy()
+        self.rect = self.image.get_rect()
+        self.radius = int(self.rect.width * 0.85 / 2)
+        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
+        self.rect.y = random.randrange(-100, -40)
         self.speedy = random.randrange(2, 10)
         self.speedx = random.randrange(-3, 3)
         self.total_degree = 0
@@ -243,7 +306,7 @@ class Rock(pygame.sprite.Sprite):
     def rotate(self):
         self.total_degree += self.rot_degree
         self.total_degree = self.total_degree % 360
-        self.image = pygame.transform.rotate(self.image_ori, self.total_degree)
+        self.image = pygame.transform.rotate(self.image_orig, self.total_degree)
         center = self.rect.center
         self.rect = self.image.get_rect()
         self.rect.center = center
@@ -252,10 +315,11 @@ class Rock(pygame.sprite.Sprite):
         self.rotate()
         self.rect.y += self.speedy
         self.rect.x += self.speedx
-        if self.rect.top > HEIGHT or self.rect.left > WIDTH or self.rect.right < 0:
+        if self.rect.top > HEIGHT or self.rect.right < 0 or self.rect.left > WIDTH:
             self.rect.x = random.randrange(0, WIDTH - self.rect.width)
             self.rect.y = random.randrange(-100, -40)
             self.speedy = random.randrange(2, 10)
+            self.speedx = random.randrange(-3, 3)
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -272,41 +336,6 @@ class Bullet(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(enemy_img, (50, 38))
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.radius = 20
-        self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-        self.rect.y = random.randrange(-100, -40)
-        self.speedx = random.choice([-2, 2])  # Only left or right movement
-        self.speedy = random.randrange(1, 8)
-        self.shoot_delay = random.randrange(500, 3000)
-        self.last_shot = pygame.time.get_ticks()
-
-    def update(self):
-        self.rect.x += self.speedx
-        if self.rect.right > WIDTH or self.rect.left < 0:
-            self.speedx *= -1  # Reverse direction when reaching edge
-        self.rect.y += self.speedy
-        if self.rect.top > HEIGHT:
-            self.rect.x = random.randrange(0, WIDTH - self.rect.width)
-            self.rect.y = random.randrange(-100, -40)
-            self.speedx = random.choice([-2, 2])  # Reset speedx on respawn
-            self.speedy = random.randrange(1, 8)
-        now = pygame.time.get_ticks()
-        if now - self.last_shot > self.shoot_delay:
-            self.shoot()
-            self.last_shot = now
-
-    def shoot(self):
-        enemy_bullet = EnemyBullet(self.rect.centerx, self.rect.bottom)
-        all_sprites.add(enemy_bullet)
-        enemy_bullets.add(enemy_bullet)
-
-
 class EnemyBullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -319,7 +348,7 @@ class EnemyBullet(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.y += self.speedy
-        if self.rect.bottom > HEIGHT:
+        if self.rect.top > HEIGHT:
             self.kill()
 
 class Explosion(pygame.sprite.Sprite):
@@ -361,65 +390,47 @@ class Power(pygame.sprite.Sprite):
         if self.rect.top > HEIGHT:
             self.kill()
 
-all_sprites = pygame.sprite.Group()
-rocks = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
-enemy_bullets = pygame.sprite.Group()
-powers = pygame.sprite.Group()
-enemies = pygame.sprite.Group()
-
-player = Player()
-all_sprites.add(player)
-
-for i in range(8):
-    rock = Rock()
-    all_sprites.add(rock)
-    rocks.add(rock)
-
-for i in range(5):
-    enemy = Enemy()
-    all_sprites.add(enemy)
-    enemies.add(enemy)
-
-score = 0
+# Game Loop
 pygame.mixer.music.play(-1)
 
 show_init = True
 running = True
 while running:
     if show_init:
-        close_game = draw_init()
-        if close_game:
+        close = draw_init()
+        if close:
             break
         show_init = False
+
         all_sprites = pygame.sprite.Group()
         rocks = pygame.sprite.Group()
         bullets = pygame.sprite.Group()
         enemy_bullets = pygame.sprite.Group()
-        powers = pygame.sprite.Group()
         enemies = pygame.sprite.Group()
-        player = Player()
+        powers = pygame.sprite.Group()
+        player_health = draw_difficulty()
+        player = Player(player_health)
         all_sprites.add(player)
+
         for i in range(8):
-            rock = Rock()
-            all_sprites.add(rock)
-            rocks.add(rock)
+            new_rock = Rock()
+            all_sprites.add(new_rock)
+            rocks.add(new_rock)
+
         for i in range(5):
-            enemy = Enemy()
-            all_sprites.add(enemy)
-            enemies.add(enemy)
+            new_enemy = Enemy()
+            all_sprites.add(new_enemy)
+            enemies.add(new_enemy)
+
         score = 0
 
     clock.tick(FPS)
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
                 player.shoot()
-            if event.key == pygame.K_ESCAPE:
-                running = False
 
     all_sprites.update()
 
@@ -433,28 +444,29 @@ while running:
             pow = Power(hit.rect.center)
             all_sprites.add(pow)
             powers.add(pow)
-        rock = Rock()
-        all_sprites.add(rock)
-        rocks.add(rock)
+        new_rock = Rock()
+        all_sprites.add(new_rock)
+        rocks.add(new_rock)
 
     hits = pygame.sprite.spritecollide(player, rocks, True, pygame.sprite.collide_circle)
     for hit in hits:
-        player.health -= hit.radius * 2
+        new_rock = Rock()
+        all_sprites.add(new_rock)
+        rocks.add(new_rock)
+        player.health -= hit.radius
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
-        rock = Rock()
-        all_sprites.add(rock)
-        rocks.add(rock)
         if player.health <= 0:
             die = Explosion(player.rect.center, 'player')
             all_sprites.add(die)
             die_sound.play()
             player.lives -= 1
-            player.health = 100
+            player.health = player_health
             player.hide()
 
     hits = pygame.sprite.spritecollide(player, enemy_bullets, True)
     for hit in hits:
+        enemy_bullets.remove(hit)  # 移除敌方子弹
         player.health -= 10
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
@@ -463,37 +475,41 @@ while running:
             all_sprites.add(die)
             die_sound.play()
             player.lives -= 1
-            player.health = 100
+            player.health = player_health
+            player.hide()
+
+
+
+    hits = pygame.sprite.spritecollide(player, enemies, True, pygame.sprite.collide_circle)
+    for hit in hits:
+        new_enemy = Enemy()
+        all_sprites.add(new_enemy)
+        enemies.add(new_enemy)
+        player.health -= hit.radius
+        expl = Explosion(hit.rect.center, 'sm')
+        all_sprites.add(expl)
+        if player.health <= 0:
+            die = Explosion(player.rect.center, 'player')
+            all_sprites.add(die)
+            die_sound.play()
+            player.lives -= 1
+            player.health = player_health
             player.hide()
 
     hits = pygame.sprite.spritecollide(player, powers, True)
     for hit in hits:
         if hit.type == 'shield':
+            shield_sound.play()
             player.health += 20
             if player.health > 100:
                 player.health = 100
-            shield_sound.play()
         if hit.type == 'gun':
-            player.gunup()
             gun_sound.play()
+            player.gunup()
 
-    if player.lives == 0 and not (die.alive()):
+    if player.lives == 0 and not any(isinstance(s, Explosion) for s in all_sprites):
         show_init = True
         update_highscore(score)
-
-    hits = pygame.sprite.groupcollide(enemies, bullets, True, True)
-    for hit in hits:
-        score += 100
-        random.choice(expl_sounds).play()
-        expl = Explosion(hit.rect.center, 'lg')
-        all_sprites.add(expl)
-        if random.random() > 0.9:
-            pow = Power(hit.rect.center)
-            all_sprites.add(pow)
-            powers.add(pow)
-        enemy = Enemy()
-        all_sprites.add(enemy)
-        enemies.add(enemy)
 
     screen.fill(BLACK)
     screen.blit(background_img, (0, 0))
@@ -502,4 +518,5 @@ while running:
     draw_health(screen, player.health, 5, 15, GREEN)
     draw_lives(screen, player.lives, player_mini_img, WIDTH - 100, 15)
     pygame.display.update()
+
 pygame.quit()
