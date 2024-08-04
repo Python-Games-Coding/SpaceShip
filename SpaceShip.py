@@ -9,7 +9,7 @@ import AI_code
 FPS = 60
 WIDTH = 800
 HEIGHT = 600
-
+# TESTING
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
