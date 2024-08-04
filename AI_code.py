@@ -4,6 +4,7 @@ from tkinter import*
 from os import*
 from sys import*
 from webbrowser import*
+from SpaceShip import*
 
 class MainAI:
     def __init__(self):
@@ -27,6 +28,7 @@ from tkinter import*
 from os import*
 from sys import*
 from webbrowser import*
+from SpaceShip import*
 
 class MainAI:
     def __init__(self):

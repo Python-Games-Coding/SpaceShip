@@ -23,7 +23,10 @@ pygame.display.set_caption("SpaceShip")
 clock = pygame.time.Clock()
 
 # Load images
+enemy_rocket_img = pygame.image.load(os.path.join("img", "enemy-rocket.png")).convert()
+rocket_img = pygame.image.load(os.path.join("img", "Rocket.jpg")).convert()
 background_img = pygame.image.load(os.path.join("img", "background.png")).convert()
+easy_background_img = pygame.image.load(os.path.join("img", "easy_background.jpg")).convert()
 player_img = pygame.image.load(os.path.join("img", "player.ico")).convert()
 player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
@@ -171,6 +174,7 @@ def draw_difficulty():
                     normal_bg.stop()
                     return 50   # Hard difficulty gives 50 health
                 if event.key == pygame.K_4:
+                    screen.blit(easy_background_img, (0, 0))
                     hardcore_bg.play()
                     normal_bg.stop()
                     return 25   
@@ -303,6 +307,8 @@ class Enemy(pygame.sprite.Sprite):
         all_sprites.add(enemy_bullet)
         enemy_bullets.add(enemy_bullet)
 
+
+
 class Rock(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -356,6 +362,21 @@ class EnemyBullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
         self.image = enemy_bullet_img
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.top = y
+        self.speedy = 5
+
+    def update(self):
+        self.rect.y += self.speedy
+        if self.rect.top > HEIGHT:
+            self.kill()
+
+class EnemyRocket(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = enemy_rocket_img
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.centerx = x
@@ -422,6 +443,7 @@ while running:
         rocks = pygame.sprite.Group()
         bullets = pygame.sprite.Group()
         enemy_bullets = pygame.sprite.Group()
+        enemy_rockets = pygame.sprite.Group()
         enemies = pygame.sprite.Group()
         powers = pygame.sprite.Group()
         player_health = draw_difficulty()
