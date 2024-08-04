@@ -3,6 +3,7 @@ import random
 import os
 import pickle
 from tkinter import Tk, simpledialog
+import AI_code
 
 # Game Initialization and Create Window
 FPS = 60
