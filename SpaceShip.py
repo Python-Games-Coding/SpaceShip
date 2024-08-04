@@ -66,7 +66,7 @@ easy_bg = pygame.mixer.Sound(os.path.join('sound', 'easy_background.ogg'))
 hard_bg = pygame.mixer.Sound(os.path.join('sound', 'hard_background.ogg'))
 hardcore_bg = pygame.mixer.Sound(os.path.join('sound', 'hardcore_background.ogg'))
 
-font_name = os.path.join("font.ttf")
+font_name = os.path.join(".spaceship/font", "font.ttf")
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, WHITE)
@@ -527,6 +527,7 @@ while running:
         hardcore_bg.stop()
         hard_bg.stop()
         easy_bg.stop()
+        normal_bg.stop()
         normal_bg.play()
         update_highscore(score)
 
