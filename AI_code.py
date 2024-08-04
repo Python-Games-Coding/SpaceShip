@@ -9,8 +9,17 @@ class MainAI:
     def __init__(self):
         pass
 
+    def update():
+        pass
+
+    def main():
+        pass
+
 class Learn(MainAI):
     def __init__(self):
+        pass
+
+    def main():
         pass
 #------------------------------------------------------------------Rocket AI Code-----------------------------------------------------------------------#
 from pygame import*
@@ -23,6 +32,15 @@ class MainAI:
     def __init__(self):
         pass
 
+    def update():
+        pass
+
+    def main():
+        pass
+
 class Learn(MainAI):
     def __init__(self):
+        pass
+
+    def main():
         pass
