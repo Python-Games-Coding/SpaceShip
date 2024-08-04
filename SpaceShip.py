@@ -50,6 +50,7 @@ power_imgs = {
 }
 
 # Load sounds
+global easy_bg, hard_bg, hardcore_bg, normal_bg
 shoot_sound = pygame.mixer.Sound(os.path.join("sound", "shoot.wav"))
 gun_sound = pygame.mixer.Sound(os.path.join("sound", "pow1.wav"))
 shield_sound = pygame.mixer.Sound(os.path.join("sound", "pow0.wav"))
@@ -58,8 +59,12 @@ expl_sounds = [
     pygame.mixer.Sound(os.path.join("sound", "expl0.wav")),
     pygame.mixer.Sound(os.path.join("sound", "expl1.wav"))
 ]
-pygame.mixer.music.load(os.path.join("sound", "background.ogg"))
-pygame.mixer.music.set_volume(0.4)
+normal_bg = pygame.mixer.Sound(os.path.join("sound", "background.ogg"))
+pygame.mixer.music.set_volume(1.4)
+
+easy_bg = pygame.mixer.Sound(os.path.join('sound', 'easy_background.ogg'))
+hard_bg = pygame.mixer.Sound(os.path.join('sound', 'hard_background.ogg'))
+hardcore_bg = pygame.mixer.Sound(os.path.join('sound', 'hardcore_background.ogg'))
 
 font_name = os.path.join("font.ttf")
 def draw_text(surf, text, size, x, y):
@@ -144,6 +149,7 @@ def draw_difficulty():
     draw_text(screen, '1. Easy Mode', 22, WIDTH / 2, HEIGHT / 2)
     draw_text(screen, '2. Normal Mode', 22, WIDTH / 2, HEIGHT / 2 + 30)
     draw_text(screen, '3. Hard Mode', 22, WIDTH / 2, HEIGHT / 2 + 60)
+    draw_text(screen, '4. HardCore Mode', 22, WIDTH / 2, HEIGHT / 2 + 90)
     pygame.display.update()
     waiting = True
     while waiting:
@@ -154,11 +160,19 @@ def draw_difficulty():
                 return None
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
+                    easy_bg.play()
+                    normal_bg.stop()
                     return 200  # Easy difficulty gives 150 health
                 if event.key == pygame.K_2:
                     return 100  # Normal difficulty gives 100 health
                 if event.key == pygame.K_3:
+                    hard_bg.play()
+                    normal_bg.stop()
                     return 50   # Hard difficulty gives 50 health
+                if event.key == pygame.K_4:
+                    hardcore_bg.play()
+                    normal_bg.stop()
+                    return 25   
     return 100  # Default to Normal difficulty
 
 def save_username(username):
@@ -330,6 +344,7 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.centerx = x
         self.rect.bottom = y
         self.speedy = -10
+        
 
     def update(self):
         self.rect.y += self.speedy
@@ -391,7 +406,7 @@ class Power(pygame.sprite.Sprite):
             self.kill()
 
 # Game Loop
-pygame.mixer.music.play(-1)
+normal_bg.play()
 
 show_init = True
 running = True
@@ -509,6 +524,10 @@ while running:
 
     if player.lives == 0 and not any(isinstance(s, Explosion) for s in all_sprites):
         show_init = True
+        hardcore_bg.stop()
+        hard_bg.stop()
+        easy_bg.stop()
+        normal_bg.play()
         update_highscore(score)
 
     screen.fill(BLACK)

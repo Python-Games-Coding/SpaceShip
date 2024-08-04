@@ -1,14 +1,13 @@
 # SpaceShipUpdate
-14w05a Update 
+1.12Pre Update 
 Add "UserName"\
 and you has more health\
 Username will display on screen\
 All the config is got encrypted\
-Add Difficulty choose, Easy = 150 Heath, Normal = 100 Health, Hard = 50Health.
+Add Difficulty choose, Easy = 150 Heath, Normal = 100 Health, Hard = 50Health.\
+Backgrounds Sound update.
 # Preview-Next Version
-Enemy and Rock will be more when you choose harder Difficulty.\
-Add HARDCORE mode, in This mode, we will have Enemys and Rock(State2) So BECARFUL!
-We can shot Enemys
+Backgrounds Update
 ## Rules
 1. You will Shot the Rock to get Points
 2. You have 3 lives,you need to use them to Get Higher Score Than before.\
