@@ -4,11 +4,12 @@ import os
 import pickle
 from tkinter import Tk, simpledialog
 import AI_code
+from enum import Enum
 
 # Game Initialization and Create Window
 FPS = 60
 WIDTH = 800
-HEIGHT = 600
+HEIGHT = 550
 # TESTING
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -16,17 +17,66 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
+# Defind enum for difficulties
+class Difficulty(Enum):
+    EASY = 'easy'
+    NORMAL = 'normal'
+    MEDIUM = 'medium'
+    HARD = 'hard'
+    HARDCORE = 'hardcore'
+
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("SpaceShip")
 clock = pygame.time.Clock()
 
+# Initialize all resources
+resources = {
+    Difficulty.EASY: {
+        'key': pygame.K_1,
+        'background': pygame.image.load(os.path.join("img", "easy_background.jpg")).convert(),
+        'sound': pygame.mixer.Sound(os.path.join('sound', 'easy_background.ogg')),
+        'health': 200
+    },
+    Difficulty.NORMAL: {
+        'key': pygame.K_2,
+        'background': pygame.image.load(os.path.join("img", "background.png")).convert(),
+        'sound': pygame.mixer.Sound(os.path.join('sound', 'background.ogg')),
+        'health': 150
+    },
+    Difficulty.MEDIUM: {
+        'key': pygame.K_3,
+        'background': pygame.image.load(os.path.join("img", "medium_background.jpg")).convert(),
+        'sound': pygame.mixer.Sound(os.path.join('sound', 'medium_background.ogg')), 
+        'health': 100
+    },
+    Difficulty.HARD: {
+        'key': pygame.K_4,
+        'background': pygame.image.load(os.path.join("img", "hard_background.jpg")).convert(),
+        'sound': pygame.mixer.Sound(os.path.join('sound', 'hard_background.ogg')),
+        'health': 50
+    },
+    Difficulty.HARDCORE: {
+        'key': pygame.K_5,
+        'background': pygame.image.load(os.path.join("img", "hardcore_background.jpg")).convert(),
+        'sound': pygame.mixer.Sound(os.path.join('sound', 'hardcore_background.ogg')),
+        'health': 30
+    }
+}
+
+def find_resource_by_key(target_key):
+    for difficulty, resource in resources.items():
+        if resource['key'] == target_key:
+            return difficulty, resource
+    return None, None
+
+current_difficulty = Difficulty.NORMAL
+background_img = resources.get(Difficulty.NORMAL).get('background')
+
 # Load images
 enemy_rocket_img = pygame.image.load(os.path.join("img", "enemy-rocket.png")).convert()
 rocket_img = pygame.image.load(os.path.join("img", "Rocket.jpg")).convert()
-background_img = pygame.image.load(os.path.join("img", "background.png")).convert()
-easy_background_img = pygame.image.load(os.path.join("img", "easy_background.jpg")).convert()
 player_img = pygame.image.load(os.path.join("img", "player.ico")).convert()
 player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
@@ -54,7 +104,6 @@ power_imgs = {
 }
 
 # Load sounds
-global easy_bg, hard_bg, hardcore_bg, normal_bg
 shoot_sound = pygame.mixer.Sound(os.path.join("sound", "shoot.wav"))
 gun_sound = pygame.mixer.Sound(os.path.join("sound", "pow1.wav"))
 shield_sound = pygame.mixer.Sound(os.path.join("sound", "pow0.wav"))
@@ -63,12 +112,7 @@ expl_sounds = [
     pygame.mixer.Sound(os.path.join("sound", "expl0.wav")),
     pygame.mixer.Sound(os.path.join("sound", "expl1.wav"))
 ]
-normal_bg = pygame.mixer.Sound(os.path.join("sound", "background.ogg"))
 pygame.mixer.music.set_volume(1.4)
-
-easy_bg = pygame.mixer.Sound(os.path.join('sound', 'easy_background.ogg'))
-hard_bg = pygame.mixer.Sound(os.path.join('sound', 'hard_background.ogg'))
-hardcore_bg = pygame.mixer.Sound(os.path.join('sound', 'hardcore_background.ogg'))
 
 font_name = os.path.join(".spaceship/font", "font.ttf")
 def draw_text(surf, text, size, x, y):
@@ -88,7 +132,7 @@ def draw_health(surf, hp, x, y, color):
     fill = (hp / 100) * BAR_LENGTH
     outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
     fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
-    if hp <= 50:  # 在血量低于等于50时显示为红色
+    if hp <= 50:  # When Health LessThan 50, hp will be Red                                                                                          
         pygame.draw.rect(surf, RED, fill_rect)
     else:
         pygame.draw.rect(surf, color, fill_rect)
@@ -126,7 +170,8 @@ def get_highest_score():
     return 0
 
 def draw_init():
-    screen.blit(background_img, (0, 0))
+    print("draw init")
+
     draw_text(screen, 'SpaceShip!', 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, '← → to move, Press "Space" to fire bullet', 22, WIDTH / 2, HEIGHT / 2)
     highscore = get_highest_score()
@@ -147,13 +192,36 @@ def draw_init():
                     return False
     return False
 
-def draw_difficulty():
+def draw_background_music(target_difficulty):
+    stop_background_music()
+    current_resources = resources.get(target_difficulty)
+    
+    global background_img
+    background_img = current_resources.get('background')
     screen.blit(background_img, (0, 0))
+
+    background_sound = current_resources.get('sound')
+    background_sound.play()
+
+    print("draw_background_music" + str(target_difficulty))
+
+def stop_background_music():
+    global current_difficulty
+    current_resources = resources.get(current_difficulty)
+    background_sound = current_resources.get('sound')
+    if background_sound != None:
+        background_sound.stop()
+       
+def draw_difficulty():
+    screen.fill(BLACK)
+    screen.blit(background_img, (0, 0))
+
     draw_text(screen, 'Select Difficulty', 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, '1. Easy Mode', 22, WIDTH / 2, HEIGHT / 2)
     draw_text(screen, '2. Normal Mode', 22, WIDTH / 2, HEIGHT / 2 + 30)
-    draw_text(screen, '3. Hard Mode', 22, WIDTH / 2, HEIGHT / 2 + 60)
-    draw_text(screen, '4. HardCore Mode', 22, WIDTH / 2, HEIGHT / 2 + 90)
+    draw_text(screen, '3. Medumn Mode', 22, WIDTH / 2, HEIGHT / 2 + 60)
+    draw_text(screen, '4. Hard Mode', 22, WIDTH / 2, HEIGHT / 2 + 90)
+    draw_text(screen, '5. HardCore Mode', 22, WIDTH / 2, HEIGHT / 2 + 120)
     pygame.display.update()
     waiting = True
     while waiting:
@@ -163,22 +231,18 @@ def draw_difficulty():
                 pygame.quit()
                 return None
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    easy_bg.play()
-                    normal_bg.stop()
-                    return 200  # Easy difficulty gives 150 health
-                if event.key == pygame.K_2:
-                    return 100  # Normal difficulty gives 100 health
-                if event.key == pygame.K_3:
-                    hard_bg.play()
-                    normal_bg.stop()
-                    return 50   # Hard difficulty gives 50 health
-                if event.key == pygame.K_4:
-                    screen.blit(easy_background_img, (0, 0))
-                    hardcore_bg.play()
-                    normal_bg.stop()
-                    return 25   
-    return 100  # Default to Normal difficulty
+                difficulty, current_resources = find_resource_by_key(event.key)
+                if difficulty == None:
+                    print("Not found resource by key:" + str(event.key))
+                    return None
+                else:
+                    draw_background_music(difficulty)
+                    global current_difficulty
+                    current_difficulty = difficulty
+                    current_health = current_resources.get('health')
+                    print("current_health" + str(current_health))
+                    return current_health
+    return None
 
 def save_username(username):
     with open(".spaceship/saves/save.dat", "wb") as f:
@@ -381,7 +445,7 @@ class EnemyRocket(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.top = y
-        self.speedy = 5
+        self.speedy = 3
 
     def update(self):
         self.rect.y += self.speedy
@@ -428,13 +492,15 @@ class Power(pygame.sprite.Sprite):
             self.kill()
 
 # Game Loop
-normal_bg.play()
+# normal_bg.play()
 
 show_init = True
 running = True
 while running:
     if show_init:
+        draw_background_music(current_difficulty)
         close = draw_init()
+
         if close:
             break
         show_init = False
@@ -547,11 +613,8 @@ while running:
 
     if player.lives == 0 and not any(isinstance(s, Explosion) for s in all_sprites):
         show_init = True
-        hardcore_bg.stop()
-        hard_bg.stop()
-        easy_bg.stop()
-        normal_bg.stop()
-        normal_bg.play()
+        draw_background_music(Difficulty.NORMAL)
+        current_difficulty = Difficulty.NORMAL
         update_highscore(score)
 
     screen.fill(BLACK)
