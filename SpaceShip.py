@@ -3,8 +3,9 @@ import random
 import os
 import pickle
 from tkinter import Tk, simpledialog
-import AI_code
+import EnemyAI
 from enum import Enum
+import PlayerAI
 
 # Game Initialization and Create Window
 FPS = 60
@@ -285,6 +286,7 @@ class Player(pygame.sprite.Sprite):
         self.gun_time = 0
 
     def update(self):
+        PlayerAI.Learn()
         now = pygame.time.get_ticks()
         if self.gun > 1 and now - self.gun_time > 5000:
             self.gun -= 1
@@ -315,6 +317,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = 0
 
     def shoot(self):
+        def Rocket():
+            PlayerAI.MainAI()
         if not self.hidden:
             if self.gun == 1:
                 bullet = Bullet(self.rect.centerx, self.rect.top)

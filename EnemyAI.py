@@ -5,6 +5,7 @@ from os import*
 from sys import*
 from webbrowser import*
 from SpaceShip import*
+import PlayerAI
 
 class MainAI:
     def __init__(self):
@@ -22,13 +23,14 @@ class Learn(MainAI):
 
     def main():
         pass
-#------------------------------------------------------------------Rocket AI Code-----------------------------------------------------------------------#
+#------------------------------------------------------------------Enemy Rocket AI Code-----------------------------------------------------------------------#
 from pygame import*
 from tkinter import*
 from os import*
 from sys import*
 from webbrowser import*
 from SpaceShip import*
+import PlayerAI
 
 class MainAI:
     def __init__(self):
