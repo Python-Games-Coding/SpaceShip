@@ -124,6 +124,8 @@ expl_sounds = [
     pygame.mixer.Sound(os.path.join("sound", "expl1.wav"))
 ]
 pygame.mixer.music.set_volume(1.4)
+now = datetime.now()
+current_time = now.strftime("%Y-%m-%d %H:%M:%S")
 print('successfully loaded Sounds at---' + current_time)
 font_name = os.path.join(".spaceship/font", "font.ttf")
 def draw_text(surf, text, size, x, y):
