@@ -6,7 +6,14 @@ from tkinter import Tk, simpledialog
 import EnemyAI
 from enum import Enum
 import PlayerAI
+from datetime import datetime
 
+# 获取当前时间
+now = datetime.now()
+global current_time
+# 格式化当前时间
+current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+print('Loaded time at---' + current_time)
 # Game Initialization and Create Window
 FPS = 60
 WIDTH = 800
@@ -88,6 +95,9 @@ enemy_img.set_colorkey(BLACK)
 enemy_bullet_img = pygame.image.load(os.path.join("img", "enemy-bullet.png")).convert()
 enemy_bullet_img.set_colorkey(BLACK)
 rock_imgs = []
+now = datetime.now()
+current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+print('successfully loaded images at---' + current_time)
 for i in range(7):
     rock_imgs.append(pygame.image.load(os.path.join("img", f"rock{i}.png")).convert())
 expl_anim = {'lg': [], 'sm': [], 'player': []}
@@ -114,7 +124,7 @@ expl_sounds = [
     pygame.mixer.Sound(os.path.join("sound", "expl1.wav"))
 ]
 pygame.mixer.music.set_volume(1.4)
-
+print('successfully loaded Sounds at---' + current_time)
 font_name = os.path.join(".spaceship/font", "font.ttf")
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
@@ -172,7 +182,12 @@ def get_highest_score():
 
 def draw_init():
     print("draw init")
-
+    print('Starting Game·')
+    print('Starting Game··')
+    print('Starting Game···')
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    print('successfully Loaded Font ' + current_time)
     draw_text(screen, 'SpaceShip!', 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, '← → to move, Press "Space" to fire bullet', 22, WIDTH / 2, HEIGHT / 2)
     highscore = get_highest_score()
@@ -216,7 +231,9 @@ def stop_background_music():
 def draw_difficulty():
     screen.fill(BLACK)
     screen.blit(background_img, (0, 0))
-
+    now = datetime.now()
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    print('Loaded difficulty' + current_time)
     draw_text(screen, 'Select Difficulty', 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, '1. Easy Mode', 22, WIDTH / 2, HEIGHT / 2)
     draw_text(screen, '2. Normal Mode', 22, WIDTH / 2, HEIGHT / 2 + 30)
@@ -252,6 +269,9 @@ def save_username(username):
 def load_username():
     try:
         with open(".spaceship/saves/save.dat", "rb") as f:
+            now = datetime.now()
+            current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+            print('successfully loaded UserName-' + current_time)
             if os.path.getsize(".spaceship/saves/save.dat") == 0:
                 return None
             return pickle.load(f)
@@ -338,6 +358,7 @@ class Player(pygame.sprite.Sprite):
         self.hidden = True
         self.hide_time = pygame.time.get_ticks()
         self.rect.center = (WIDTH / 2, HEIGHT + 500)
+        print('AI learning')
 
     def gunup(self):
         self.gun += 1
@@ -601,6 +622,7 @@ while running:
             all_sprites.add(die)
             die_sound.play()
             player.lives -= 1
+            print('Lives: ' + player.lives)
             player.health = player_health
             player.hide()
 
@@ -619,7 +641,15 @@ while running:
         show_init = True
         draw_background_music(Difficulty.NORMAL)
         current_difficulty = Difficulty.NORMAL
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        print('Player Died At ' + current_time)
+        print('Restarting Game')
+        
         update_highscore(score)
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        print('successfully updated Highscore-' + current_time)
 
     screen.fill(BLACK)
     screen.blit(background_img, (0, 0))
