@@ -79,11 +79,14 @@ def find_resource_by_key(target_key):
             return difficulty, resource
     return None, None
 
+
+
 current_difficulty = Difficulty.NORMAL
 background_img = resources.get(Difficulty.NORMAL).get('background')
 
 # Load images
 enemy_rocket_img = pygame.image.load(os.path.join("img", "enemy-rocket.png")).convert()
+coin = pygame.image.load(os.path.join("img", "gold_coin.jpg")).convert()
 rocket_img = pygame.image.load(os.path.join("img", "Rocket.jpg")).convert()
 player_img = pygame.image.load(os.path.join("img", "player.ico")).convert()
 player_mini_img = pygame.transform.scale(player_img, (25, 19))
@@ -289,6 +292,9 @@ if not username:
     root.destroy()
     if username:
         save_username(username)
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+        print('updated username at-' + current_time)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, health):
@@ -624,7 +630,7 @@ while running:
             all_sprites.add(die)
             die_sound.play()
             player.lives -= 1
-            print('Lives: ' + player.lives)
+            print('player.name.tag.health.die')
             player.health = player_health
             player.hide()
 
@@ -661,4 +667,8 @@ while running:
     draw_lives(screen, player.lives, player_mini_img, WIDTH - 100, 15)
     pygame.display.update()
 
+
+now = datetime.now()
+current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+print('Game Quit  ' + current_time)
 pygame.quit()
