@@ -209,6 +209,7 @@ def draw_init():
                 return True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
+                    print(username + ' Joined The Game')
                     waiting = False
                     return False
     return False
@@ -283,12 +284,17 @@ def load_username():
     except (FileNotFoundError, EOFError):
         return None
 
+global username
 # Get or create username
 username = load_username()
 if not username:
     root = Tk()
     root.withdraw()
     username = simpledialog.askstring("Username", "Choose a username:")
+    if username != '':
+        print('Username: ' + username)
+    else:
+        print('Username: NONE')
     root.destroy()
     if username:
         save_username(username)
