@@ -6,10 +6,10 @@ Medium-100Health
 Hard-50Health
 HardCore-30Health
 # SpaceShipUpdate
-1.23Pre2 Update 
+1.23.1_3 Update 
 add rocket.\
 Add medium Gamemode\
-game_objects.py Update(For AI)
+delete game_objects.py\
 ## Bugs Fixed
 Fix Background not Display\
 ## Rules
