@@ -26,3 +26,10 @@ GoldCoin and Username Will display on screen.
 3. Choose a Gamemode before you Play\
 4. Use GoldCoin(Get it in GameMode-Normal and Up)to Use Rocket(Folling Enemys)(5 Coins Each)
 5. Use Wall to Save your self in Rocket(10 Coins Each)
+# Install modles
+first,click on the .exe file(download at https://www.digitalstudios.top/project/spaceship/files)\
+Then open the Bash and type
+```bash
+pip install pygame
+```
+Or you can download it at https://www.digitalstudios.top/project/spaceship/files too!
